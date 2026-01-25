@@ -1,0 +1,13 @@
+# Environment variables (secrets)
+.env
+
+# Token files (contain access tokens)
+*-token.json
+
+# Output data files
+*.json
+*.tsv
+
+# Allow specific config files if needed
+!package.json
+!tsconfig.json
