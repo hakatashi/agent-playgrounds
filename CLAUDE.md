@@ -23,6 +23,13 @@ This repository serves as a playground for AI coding agents to execute various o
   - Session cookies or authentication headers
   - Database connection strings with embedded credentials
 - **Use `.gitignore`** within each subdirectory to exclude sensitive files, build artifacts, and dependencies (e.g., `node_modules/`, `.env`, `*.key`).
+- **Never commit large generated or build artifacts.** This includes but is not limited to:
+  - Generated data files (JSON, CSV, etc.) produced by scripts
+  - Compiled binaries and build output
+  - Downloaded datasets or external resources
+  - Any file that can be reproduced by running a script in the repository
+  - As a rule of thumb, do not commit any single file exceeding 100 KB
+  - Always add such files to `.gitignore` and ensure the script can regenerate them on demand.
 - If a task requires credentials at runtime, read them from environment variables or prompt the user for input—never hardcode them.
 
 ### Copyright and Licensing
@@ -36,6 +43,7 @@ Before every commit, perform the following checks:
 
 1. Run `git diff --staged` to review all staged changes line by line.
 2. Verify that no credentials, secrets, or sensitive information are present in the diff.
-3. Verify that no copyrighted or legally problematic files are included.
-4. Confirm that all changes are within the intended subdirectory and do not modify unrelated files.
-5. After pushing, briefly review the commit on the remote to ensure nothing was accidentally included.
+3. Verify that no large generated files or build artifacts are included in the diff.
+4. Verify that no copyrighted or legally problematic files are included.
+5. Confirm that all changes are within the intended subdirectory and do not modify unrelated files.
+6. After pushing, briefly review the commit on the remote to ensure nothing was accidentally included.
