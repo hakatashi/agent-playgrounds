@@ -1,0 +1,9 @@
+{
+  "name": "unicode-emoji-enumeration",
+  "version": "1.0.0",
+  "description": "Enumerate all Unicode-defined emoji from official UCD and emoji data files",
+  "type": "module",
+  "scripts": {
+    "start": "node enumerate-emoji.mjs"
+  }
+}
