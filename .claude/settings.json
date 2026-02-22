@@ -1,6 +1,9 @@
 {
   "permissions": {
     "allow": [
+      "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(git:*)",
       "WebFetch(domain:www.unicode.org)",
       "WebFetch(domain:unicode.org)"
     ],
