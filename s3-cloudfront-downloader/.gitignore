@@ -1,0 +1,6 @@
+# S3 object list (cached, regenerable)
+s3_file_list.tsv
+
+# Persistent state files
+cf_transferred_bytes.txt
+download.log
