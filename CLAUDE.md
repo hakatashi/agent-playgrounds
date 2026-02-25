@@ -30,6 +30,7 @@ This repository serves as a playground for AI coding agents to execute various o
   - Any file that can be reproduced by running a script in the repository
   - As a rule of thumb, do not commit any single file exceeding 100 KB
   - Always add such files to `.gitignore` and ensure the script can regenerate them on demand.
+  - **Exception:** `gradle/wrapper/gradle-wrapper.jar` in Android/Gradle projects may be committed. It is a small (~43 KB) bootstrap binary required to run `./gradlew` without a pre-installed Gradle, and committing it is the official Gradle recommendation.
 - If a task requires credentials at runtime, read them from environment variables or prompt the user for input—never hardcode them.
 
 ### Copyright and Licensing
