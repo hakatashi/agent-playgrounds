@@ -1,0 +1,5 @@
+ids-data/
+svg_cache/
+.venv/
+*.png
+__pycache__/
