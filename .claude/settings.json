@@ -5,7 +5,14 @@
       "Bash(git add:*)",
       "Bash(git:*)",
       "WebFetch(domain:www.unicode.org)",
-      "WebFetch(domain:unicode.org)"
+      "WebFetch(domain:unicode.org)",
+      "Bash(apt-cache search:*)",
+      "Bash(java -version)",
+      "Bash(javac -version)",
+      "Read(//usr/lib/android-sdk/**)",
+      "Read(//home/hakatashi/android-sdk/**)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
     ],
     "additionalDirectories": [
       "/home/hakatashi/Documents/GitHub/agent-playgrounds"

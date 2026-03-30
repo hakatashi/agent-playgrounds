@@ -33,6 +33,13 @@ This repository serves as a playground for AI coding agents to execute various o
   - **Exception:** `gradle/wrapper/gradle-wrapper.jar` in Android/Gradle projects may be committed. It is a small (~43 KB) bootstrap binary required to run `./gradlew` without a pre-installed Gradle, and committing it is the official Gradle recommendation.
 - If a task requires credentials at runtime, read them from environment variables or prompt the user for input—never hardcode them.
 
+### Python Environment
+
+- **Always use a virtual environment (`venv`)** when Python library installation is required. Create it inside the task subdirectory (e.g., `python3 -m venv venv`).
+- **Never modify the global Python environment.** Avoid `pip install` without an active venv, and do not use `sudo pip install` or `pip install --user` to install packages globally.
+- Invoke Python and pip through the venv (e.g., `venv/bin/python3`, `venv/bin/pip`) rather than activating the venv with `source venv/bin/activate`, to keep shell state changes minimal.
+- Add `venv/` to the subdirectory's `.gitignore` so the virtual environment is never committed.
+
 ### Copyright and Licensing
 
 - **Do not commit copyrighted material** that you do not have the right to redistribute. This includes proprietary datasets, copyrighted text, images, or any third-party content not explicitly licensed for redistribution.
