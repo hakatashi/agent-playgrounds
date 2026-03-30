@@ -1,0 +1,6 @@
+venv/
+questions.json
+questions.csv
+abc2026.pdf
+__pycache__/
+*.pyc
