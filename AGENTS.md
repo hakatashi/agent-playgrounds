@@ -8,7 +8,8 @@ This repository serves as a playground for AI coding agents to execute various o
 
 - **Always create a new subdirectory** for each session or task. Name it descriptively based on the task being performed (e.g., `fitbit-heartrate-retrieval`, `csv-data-analysis`).
 - **Keep all work self-contained** within the subdirectory. This includes source code, configuration files, installed dependencies (e.g., `node_modules`), and any generated output.
-- Each subdirectory should be independently runnable. Include a README or comments explaining what the task does and how to run it, if applicable.
+- Each subdirectory should be independently runnable.
+- **Always create a `README.md` in English** inside the subdirectory upon completing the task. The README must cover at minimum: the purpose of the task, prerequisites, and how to run it.
 - If a `package.json` or similar dependency manifest is needed, create it inside the subdirectory rather than at the repository root.
 
 ### Security and Confidentiality
@@ -49,9 +50,10 @@ This repository serves as a playground for AI coding agents to execute various o
 
 Before every commit, perform the following checks:
 
-1. Review all staged changes line by line (e.g., `git diff --staged`).
-2. Verify that no credentials, secrets, or sensitive information are present in the diff.
-3. Verify that no large generated files or build artifacts are included in the diff.
-4. Verify that no copyrighted or legally problematic files are included.
-5. Confirm that all changes are within the intended subdirectory and do not modify unrelated files.
-6. After pushing, briefly review the commit on the remote to ensure nothing was accidentally included.
+1. Update the subdirectory's `README.md` to reflect any changes made in this commit (new scripts, changed usage, updated output format, etc.).
+2. Review all staged changes line by line (e.g., `git diff --staged`).
+3. Verify that no credentials, secrets, or sensitive information are present in the diff.
+4. Verify that no large generated files or build artifacts are included in the diff.
+5. Verify that no copyrighted or legally problematic files are included.
+6. Confirm that all changes are within the intended subdirectory and do not modify unrelated files.
+7. After pushing, briefly review the commit on the remote to ensure nothing was accidentally included.
