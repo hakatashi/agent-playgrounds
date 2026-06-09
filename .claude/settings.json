@@ -12,7 +12,8 @@
       "Read(//usr/lib/android-sdk/**)",
       "Read(//home/hakatashi/android-sdk/**)",
       "WebSearch",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:esolangs.org)"
     ],
     "additionalDirectories": [
       "/home/hakatashi/Documents/GitHub/agent-playgrounds"
