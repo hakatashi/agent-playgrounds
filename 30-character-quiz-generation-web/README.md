@@ -18,6 +18,13 @@ A web application for generating 30-character Japanese 早押し (buzzer quiz) q
 - [Ollama](https://ollama.com/) running on `localhost:11434` (for local LLM backend)
 - Anthropic API key (for Claude backend)
 
+## Ports
+
+| Component | Port |
+|-----------|------|
+| API Server | `43721` |
+| Frontend (Vite dev) | `52194` |
+
 ## Setup
 
 ### 1. Server
@@ -30,7 +37,7 @@ npm install
 npm run dev
 ```
 
-Server runs on `http://localhost:3000`.
+Server runs on `http://localhost:43721`.
 
 ### 2. Client
 
@@ -40,7 +47,35 @@ npm install
 npm run dev
 ```
 
-Client runs on `http://localhost:5173`. API requests to `/api/*` are proxied to the server.
+Client runs on `http://localhost:52194`. API requests to `/api/*` are proxied to the server.
+
+## Running as systemd User Services
+
+Service files are installed at `~/.config/systemd/user/`:
+
+| Service | Unit file |
+|---------|-----------|
+| API server | `quiz-generator-server.service` |
+| Frontend | `quiz-generator-client.service` |
+
+Both services are enabled to start at login. Common commands:
+
+```bash
+# Start / stop
+systemctl --user start quiz-generator-server quiz-generator-client
+systemctl --user stop quiz-generator-server quiz-generator-client
+
+# Status and logs
+systemctl --user status quiz-generator-server quiz-generator-client
+journalctl --user -u quiz-generator-server -f
+journalctl --user -u quiz-generator-client -f
+
+# Enable / disable autostart
+systemctl --user enable quiz-generator-server quiz-generator-client
+systemctl --user disable quiz-generator-server quiz-generator-client
+```
+
+The server service reads `server/.env` for `ANTHROPIC_API_KEY` and `MONGODB_URI`.
 
 ## Usage
 
