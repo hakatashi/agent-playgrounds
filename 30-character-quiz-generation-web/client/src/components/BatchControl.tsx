@@ -41,7 +41,12 @@ export default function BatchControl() {
     fetch(`/api/generate/models?backend=${form.llmBackend}`)
       .then((r) => r.json())
       .then((data: {models?: string[]}) => {
-        setModels(data.models ?? []);
+        const list = data.models ?? [];
+        setModels(list);
+        // モデル一覧が取得できた場合、現在値がリストにない（または空）なら先頭を自動選択
+        if (list.length > 0 && !list.includes(form.modelName)) {
+          setForm((v) => ({...v, modelName: list[0]}));
+        }
       })
       .catch(() => {});
   }, [form.llmBackend]);

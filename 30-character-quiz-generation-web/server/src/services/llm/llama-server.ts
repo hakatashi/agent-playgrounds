@@ -67,6 +67,7 @@ async function startServer(modelPath: string): Promise<void> {
     '--port', port,
     '-c', config.llamaCtxSize,
     '-ngl', config.llamaGpuLayers,
+    '--parallel', '1',
   ];
 
   console.log(`[llama-server] Starting: ${config.llamaServerBinary} ${args.join(' ')}`);
@@ -104,7 +105,6 @@ async function startServer(modelPath: string): Promise<void> {
 async function ensureServer(modelPath: string): Promise<void> {
   if (serverProcess && loadedModelPath === modelPath) return;
 
-  // 別モデルで起動中 or 未起動 → 新しい起動シーケンスを開始（同時リクエストは同じPromiseを待つ）
   if (!startingPromise || loadedModelPath !== modelPath) {
     startingPromise = startServer(modelPath).finally(() => {
       startingPromise = null;
@@ -127,59 +127,226 @@ process.once('exit', () => stopLlamaServer());
 process.once('SIGTERM', () => { stopLlamaServer(); process.exit(0); });
 process.once('SIGINT', () => { stopLlamaServer(); process.exit(0); });
 
-// ── SSEストリーミング共通ヘルパー ──────────────────────────────
+// ── ツール定義 ─────────────────────────────────────────────────
+const TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'count_characters',
+      description: '問題文の文字数をUnicode文字（コードポイント）単位で正確にカウントします。手順4・手順5での文字数確認には必ずこのツールを使用してください。',
+      parameters: {
+        type: 'object',
+        properties: {
+          questions: {
+            type: 'array',
+            items: {type: 'string'},
+            description: '文字数をカウントする問題文のリスト',
+          },
+        },
+        required: ['questions'],
+      },
+    },
+  },
+];
+
+function executeCountCharacters(argsJson: string): string {
+  try {
+    const {questions} = JSON.parse(argsJson) as {questions: string[]};
+    if (!Array.isArray(questions)) return 'エラー: questions は配列である必要があります';
+    return questions.map((q) => `"${q}": ${[...q].length}文字`).join('\n');
+  } catch {
+    return 'エラー: 引数の JSON パースに失敗しました';
+  }
+}
+
+// ── メッセージ型 ───────────────────────────────────────────────
+interface ToolCall {
+  id: string;
+  type: 'function';
+  function: {name: string; arguments: string};
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'tool';
+  content: string | null;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
+}
+
+// ── ループ検出 ─────────────────────────────────────────────────
+// 直近 windowSize 文字の中に seqLen 文字の同一シーケンスが2回以上現れたらループと判定
+function createLoopDetector(windowSize = 600, seqLen = 150) {
+  let buffer = '';
+  return (chunk: string): boolean => {
+    buffer += chunk;
+    if (buffer.length > windowSize) buffer = buffer.slice(-windowSize);
+    if (buffer.length < seqLen * 2) return false;
+    const seq = buffer.slice(-seqLen);
+    const preceding = buffer.slice(0, buffer.length - seqLen);
+    return preceding.includes(seq);
+  };
+}
+
+// ── SSEストリーミング（ツール呼び出し＋ループ検出対応）──────────
 async function streamFromLlamaServer(
   prompt: string,
   onEvent: (e: LLMStreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const response = await fetch(`${config.llamaServerUrl}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      messages: [{role: 'user', content: prompt}],
-      stream: true,
-      max_tokens: 16000,
-    }),
-    signal,
-  });
+  const messages: ChatMessage[] = [{role: 'user', content: prompt}];
+  const MAX_LOOP_BREAKS = 3;
+  let loopBreaks = 0;
 
-  if (!response.ok || !response.body) {
-    throw new Error(`llama-server returned HTTP ${response.status}: ${await response.text()}`);
-  }
+  // ツール呼び出し or ループ継続がある限りループ（最大13ターン）
+  for (let turn = 0; turn < 13; turn++) {
+    const response = await fetch(`${config.llamaServerUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        messages,
+        tools: TOOLS,
+        tool_choice: 'auto',
+        stream: true,
+        max_tokens: 32000,
+        temperature: 0.7,
+        top_p: 0.95,
+        top_k: 20,
+        repeat_penalty: 1.1,
+      }),
+      signal,
+    });
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
+    if (!response.ok || !response.body) {
+      throw new Error(`llama-server returned HTTP ${response.status}: ${await response.text()}`);
+    }
 
-  while (true) {
-    const {done, value} = await reader.read();
-    if (done) break;
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let finishReason: string | null = null;
+    let assistantText = '';
+    const toolCallAccum = new Map<number, {id: string; name: string; arguments: string}>();
+    // コンテンツ用（短いウィンドウで敏感に検知）
+    const detectContentLoop = createLoopDetector(600, 150);
+    // thinking block 用（長いウィンドウ・長いシーケンスで誤検知を抑制）
+    const detectReasoningLoop = createLoopDetector(1000, 250);
 
-    buffer += decoder.decode(value, {stream: true});
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
+    streamLoop: while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
 
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      const data = line.slice(6).trim();
-      if (data === '[DONE]') {
-        onEvent({type: 'done'});
-        return;
-      }
-      try {
-        const parsed = JSON.parse(data) as {
-          choices?: {delta?: {content?: string; reasoning_content?: string}}[];
-        };
-        const delta = parsed.choices?.[0]?.delta;
-        // thinking トークン（表示用。TSV解析対象外）
-        if (delta?.reasoning_content) onEvent({type: 'reasoning', content: delta.reasoning_content});
-        // 実際の回答トークン
-        if (delta?.content) onEvent({type: 'chunk', content: delta.content});
-      } catch {
-        // ignore malformed chunks
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break streamLoop;
+
+        try {
+          const parsed = JSON.parse(data) as {
+            choices?: {
+              delta?: {
+                content?: string;
+                reasoning_content?: string;
+                tool_calls?: {
+                  index: number;
+                  id?: string;
+                  function?: {name?: string; arguments?: string};
+                }[];
+              };
+              finish_reason?: string | null;
+            }[];
+          };
+
+          const choice = parsed.choices?.[0];
+          if (!choice) continue;
+          if (choice.finish_reason) finishReason = choice.finish_reason;
+
+          const delta = choice.delta;
+          if (!delta) continue;
+
+          if (delta.reasoning_content) {
+            onEvent({type: 'reasoning', content: delta.reasoning_content});
+
+            // thinking block のループを検出
+            if (loopBreaks < MAX_LOOP_BREAKS && detectReasoningLoop(delta.reasoning_content)) {
+              await reader.cancel();
+              finishReason = 'loop_detected';
+              break streamLoop;
+            }
+          }
+          if (delta.content) {
+            assistantText += delta.content;
+            onEvent({type: 'chunk', content: delta.content});
+
+            // コンテンツのループを検出
+            if (loopBreaks < MAX_LOOP_BREAKS && detectContentLoop(delta.content)) {
+              await reader.cancel();
+              finishReason = 'loop_detected';
+              break streamLoop;
+            }
+          }
+
+          for (const tc of delta.tool_calls ?? []) {
+            const acc = toolCallAccum.get(tc.index) ?? {id: '', name: '', arguments: ''};
+            if (tc.id) acc.id = tc.id;
+            if (tc.function?.name) acc.name += tc.function.name;
+            if (tc.function?.arguments) acc.arguments += tc.function.arguments;
+            toolCallAccum.set(tc.index, acc);
+          }
+        } catch {
+          // ignore malformed chunks
+        }
       }
     }
+
+    // ── ループ検出時: 継続メッセージを付けて再リクエスト ─────────
+    if (finishReason === 'loop_detected') {
+      loopBreaks++;
+      onEvent({type: 'reasoning', content: `\n[ループ検出 (${loopBreaks}/${MAX_LOOP_BREAKS})。継続リクエストを送信します...]\n`});
+      messages.push({role: 'assistant', content: assistantText || null});
+      messages.push({
+        role: 'user',
+        content: '出力が繰り返しループしています。繰り返しを止めて、残りの作業を続けてください。',
+      });
+      continue;
+    }
+
+    // ── ツール呼び出しがあった場合 ───────────────────────────────
+    if (finishReason === 'tool_calls' && toolCallAccum.size > 0) {
+      const toolCalls: ToolCall[] = [...toolCallAccum.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([, acc]) => ({
+          id: acc.id || `call_${Date.now()}`,
+          type: 'function' as const,
+          function: {name: acc.name, arguments: acc.arguments},
+        }));
+
+      messages.push({
+        role: 'assistant',
+        content: assistantText || null,
+        tool_calls: toolCalls,
+      });
+
+      for (const tc of toolCalls) {
+        let result: string;
+        if (tc.function.name === 'count_characters') {
+          result = executeCountCharacters(tc.function.arguments);
+        } else {
+          result = `未知のツール: ${tc.function.name}`;
+        }
+
+        onEvent({type: 'reasoning', content: `\n[count_characters の結果]\n${result}\n`});
+        messages.push({role: 'tool', content: result, tool_call_id: tc.id});
+      }
+
+      continue;
+    }
+
+    // ツール呼び出しなし・ループなし → 生成完了
+    break;
   }
 
   onEvent({type: 'done'});
@@ -194,10 +361,8 @@ export const llamaServerService: LLMService = {
   },
 
   async listModels() {
-    // 設定されたモデルパス一覧を返す（サーバーが停止中でも選択できるようにする）
     if (config.llamaModelPaths.length > 0) return config.llamaModelPaths;
 
-    // 設定なしの場合、起動中のサーバーから取得を試みる
     try {
       const response = await fetch(`${config.llamaServerUrl}/v1/models`, {
         signal: AbortSignal.timeout(3000),

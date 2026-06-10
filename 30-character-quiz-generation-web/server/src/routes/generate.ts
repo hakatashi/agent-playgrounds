@@ -45,7 +45,9 @@ router.post('/', async (req: Request, res: Response) => {
   res.flushHeaders();
 
   const abortController = new AbortController();
-  req.on('close', () => abortController.abort());
+  res.on('close', () => {
+    abortController.abort();
+  });
 
   try {
     let wikipediaContext: string | undefined;
