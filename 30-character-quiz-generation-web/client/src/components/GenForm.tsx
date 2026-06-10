@@ -28,14 +28,18 @@ export default function GenForm({onSubmit, loading, onAbort}: Props) {
     wikiTitle: '',
   });
   const [models, setModels] = useState<string[]>([]);
+  const [modelsWarning, setModelsWarning] = useState('');
 
   useEffect(() => {
+    setModelsWarning('');
     fetch(`/api/generate/models?backend=${values.llmBackend}`)
       .then((r) => r.json())
-      .then((data: {models: string[]}) => {
-        setModels(data.models);
-        if (data.models.length > 0 && !data.models.includes(values.modelName)) {
-          setValues((v) => ({...v, modelName: data.models[0]}));
+      .then((data: {models?: string[]; warning?: string}) => {
+        const list = data.models ?? [];
+        setModels(list);
+        if (data.warning) setModelsWarning(data.warning);
+        if (list.length > 0 && !list.includes(values.modelName)) {
+          setValues((v) => ({...v, modelName: list[0]}));
         }
       })
       .catch(() => {});
@@ -78,12 +82,21 @@ export default function GenForm({onSubmit, loading, onAbort}: Props) {
         </label>
         <label>
           モデル
-          <select value={values.modelName} onChange={set('modelName')}>
-            {models.map((m) => <option key={m} value={m}>{m}</option>)}
-            {models.length === 0 && <option value={values.modelName}>{values.modelName}</option>}
-          </select>
+          {models.length > 0 ? (
+            <select value={values.modelName} onChange={set('modelName')}>
+              {models.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+          ) : (
+            <input value={values.modelName} onChange={set('modelName')} placeholder="モデル名を入力" required />
+          )}
         </label>
       </div>
+
+      {modelsWarning && (
+        <div className={styles.warning}>
+          Ollamaに接続できません: {modelsWarning}
+        </div>
+      )}
 
       <div className={styles.row}>
         <label className={styles.checkLabel}>

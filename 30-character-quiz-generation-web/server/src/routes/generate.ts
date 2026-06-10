@@ -130,7 +130,9 @@ router.get('/models', async (req: Request, res: Response) => {
     const models = await service.listModels();
     res.json({models});
   } catch (err) {
-    res.status(500).json({error: err instanceof Error ? err.message : String(err)});
+    // Ollamaが起動していない場合など、空リストを返してUIを壊さない
+    const message = err instanceof Error ? err.message : String(err);
+    res.json({models: [], warning: message});
   }
 });
 

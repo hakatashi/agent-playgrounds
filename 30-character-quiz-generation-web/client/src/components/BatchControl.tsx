@@ -40,8 +40,8 @@ export default function BatchControl() {
   useEffect(() => {
     fetch(`/api/generate/models?backend=${form.llmBackend}`)
       .then((r) => r.json())
-      .then((data: {models: string[]}) => {
-        setModels(data.models);
+      .then((data: {models?: string[]}) => {
+        setModels(data.models ?? []);
       })
       .catch(() => {});
   }, [form.llmBackend]);
@@ -122,9 +122,13 @@ export default function BatchControl() {
           </label>
           <label>
             モデル
-            <select value={form.modelName} onChange={set('modelName')}>
-              {models.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
+            {models.length > 0 ? (
+              <select value={form.modelName} onChange={set('modelName')}>
+                {models.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            ) : (
+              <input value={form.modelName} onChange={set('modelName')} placeholder="モデル名を入力" required />
+            )}
           </label>
         </div>
 

@@ -77,3 +77,12 @@
 .abortBtn:hover {
   background: #aa2200;
 }
+
+.warning {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: #7a5900;
+}
