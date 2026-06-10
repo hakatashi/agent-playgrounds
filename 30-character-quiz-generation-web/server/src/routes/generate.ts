@@ -1,6 +1,7 @@
 import {Router, type Request, type Response} from 'express';
 import {ollamaService} from '../services/llm/ollama.js';
 import {claudeService} from '../services/llm/claude.js';
+import {llamaServerService} from '../services/llm/llama-server.js';
 import {buildPrompt} from '../services/promptBuilder.js';
 import {parseQuizTSV} from '../services/quizParser.js';
 import {fetchWikipediaArticle} from '../services/wikipedia.js';
@@ -27,7 +28,7 @@ router.post('/', async (req: Request, res: Response) => {
     majorGenre: string;
     minorGenre: string;
     answerFormat: string;
-    llmBackend: 'ollama' | 'claude';
+    llmBackend: 'ollama' | 'claude' | 'llama-server';
     modelName: string;
     useWikipedia?: boolean;
     wikiTitle?: string;
@@ -65,7 +66,10 @@ router.post('/', async (req: Request, res: Response) => {
 
     const prompt = buildPrompt({majorGenre, minorGenre, answerFormat, wikipediaContext});
 
-    const service: LLMService = llmBackend === 'claude' ? claudeService : ollamaService;
+    const service: LLMService =
+      llmBackend === 'claude' ? claudeService :
+      llmBackend === 'llama-server' ? llamaServerService :
+      ollamaService;
 
     let fullText = '';
 
@@ -126,7 +130,10 @@ router.post('/', async (req: Request, res: Response) => {
 router.get('/models', async (req: Request, res: Response) => {
   const backend = req.query.backend as string;
   try {
-    const service: LLMService = backend === 'claude' ? claudeService : ollamaService;
+    const service: LLMService =
+      backend === 'claude' ? claudeService :
+      backend === 'llama-server' ? llamaServerService :
+      ollamaService;
     const models = await service.listModels();
     res.json({models});
   } catch (err) {

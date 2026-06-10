@@ -5,7 +5,7 @@ export interface IBatchJob extends Document {
   majorGenre: string;
   answerFormat: string;
   minorGenres: string[];
-  llmBackend: 'ollama' | 'claude';
+  llmBackend: 'ollama' | 'claude' | 'llama-server';
   modelName: string;
   useWikipedia: boolean;
   currentIndex: number;
@@ -25,7 +25,7 @@ const batchJobSchema = new mongoose.Schema<IBatchJob>({
   majorGenre: {type: String, required: true},
   answerFormat: {type: String, required: true},
   minorGenres: [{type: String, required: true}],
-  llmBackend: {type: String, enum: ['ollama', 'claude'], required: true},
+  llmBackend: {type: String, enum: ['ollama', 'claude', 'llama-server'], required: true},
   modelName: {type: String, required: true},
   useWikipedia: {type: Boolean, default: false},
   currentIndex: {type: Number, default: 0},

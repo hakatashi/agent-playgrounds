@@ -19,7 +19,7 @@ interface BatchFormValues {
   majorGenre: string;
   answerFormat: string;
   minorGenresText: string;
-  llmBackend: 'ollama' | 'claude';
+  llmBackend: 'ollama' | 'claude' | 'llama-server';
   modelName: string;
   useWikipedia: boolean;
 }
@@ -29,8 +29,8 @@ export default function BatchControl() {
     majorGenre: '',
     answerFormat: '人名',
     minorGenresText: '',
-    llmBackend: 'claude',
-    modelName: 'claude-opus-4-8',
+    llmBackend: 'llama-server',
+    modelName: '',
     useWikipedia: false,
   });
   const [jobs, setJobs] = useState<BatchJob[]>([]);
@@ -116,6 +116,7 @@ export default function BatchControl() {
           <label>
             LLMバックエンド
             <select value={form.llmBackend} onChange={set('llmBackend')}>
+              <option value="llama-server">llama-server（ローカル）</option>
               <option value="claude">Claude API</option>
               <option value="ollama">Ollama（ローカル）</option>
             </select>

@@ -6,7 +6,7 @@ export interface IQuiz extends Document {
   majorGenre: string;
   minorGenre: string;
   answerFormat: string;
-  llmBackend: 'ollama' | 'claude';
+  llmBackend: 'ollama' | 'claude' | 'llama-server';
   modelName: string;
   wikiTitle?: string;
   batchJobId?: Types.ObjectId;
@@ -20,7 +20,7 @@ const quizSchema = new mongoose.Schema<IQuiz>({
   majorGenre: {type: String, required: true},
   minorGenre: {type: String, required: true},
   answerFormat: {type: String, required: true},
-  llmBackend: {type: String, enum: ['ollama', 'claude'], required: true},
+  llmBackend: {type: String, enum: ['ollama', 'claude', 'llama-server'], required: true},
   modelName: {type: String, required: true},
   wikiTitle: {type: String},
   batchJobId: {type: mongoose.Schema.Types.ObjectId, ref: 'BatchJob'},

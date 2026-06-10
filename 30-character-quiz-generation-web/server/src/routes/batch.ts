@@ -3,6 +3,7 @@ import {BatchJob} from '../db/models/BatchJob.js';
 import {Quiz} from '../db/models/Quiz.js';
 import {ollamaService} from '../services/llm/ollama.js';
 import {claudeService} from '../services/llm/claude.js';
+import {llamaServerService} from '../services/llm/llama-server.js';
 import {buildPrompt} from '../services/promptBuilder.js';
 import {parseQuizTSV} from '../services/quizParser.js';
 import {fetchWikipediaArticle} from '../services/wikipedia.js';
@@ -21,7 +22,10 @@ async function runBatchJob(jobId: string) {
 
   await BatchJob.findByIdAndUpdate(jobId, {status: 'running'});
 
-  const service: LLMService = job.llmBackend === 'claude' ? claudeService : ollamaService;
+  const service: LLMService =
+    job.llmBackend === 'claude' ? claudeService :
+    job.llmBackend === 'llama-server' ? llamaServerService :
+    ollamaService;
 
   try {
     for (let i = 0; i < job.minorGenres.length; i++) {
@@ -112,7 +116,7 @@ router.post('/', async (req: Request, res: Response) => {
       majorGenre: string;
       answerFormat: string;
       minorGenres: string[];
-      llmBackend: 'ollama' | 'claude';
+      llmBackend: 'ollama' | 'claude' | 'llama-server';
       modelName: string;
       useWikipedia?: boolean;
     };

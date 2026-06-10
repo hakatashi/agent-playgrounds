@@ -5,7 +5,7 @@ export interface GenFormValues {
   majorGenre: string;
   minorGenre: string;
   answerFormat: string;
-  llmBackend: 'ollama' | 'claude';
+  llmBackend: 'ollama' | 'claude' | 'llama-server';
   modelName: string;
   useWikipedia: boolean;
   wikiTitle: string;
@@ -22,8 +22,8 @@ export default function GenForm({onSubmit, loading, onAbort}: Props) {
     majorGenre: '',
     minorGenre: '',
     answerFormat: '人名',
-    llmBackend: 'claude',
-    modelName: 'claude-opus-4-8',
+    llmBackend: 'llama-server',
+    modelName: '',
     useWikipedia: false,
     wikiTitle: '',
   });
@@ -76,6 +76,7 @@ export default function GenForm({onSubmit, loading, onAbort}: Props) {
         <label>
           LLMバックエンド
           <select value={values.llmBackend} onChange={set('llmBackend')}>
+            <option value="llama-server">llama-server（ローカル）</option>
             <option value="claude">Claude API</option>
             <option value="ollama">Ollama（ローカル）</option>
           </select>
