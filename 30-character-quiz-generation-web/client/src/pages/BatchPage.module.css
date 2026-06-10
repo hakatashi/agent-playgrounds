@@ -1,0 +1,10 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+}

@@ -1,0 +1,79 @@
+.form {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex: 1;
+  min-width: 180px;
+}
+
+.row label input,
+.row label select {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.row label input:focus,
+.row label select:focus {
+  outline: none;
+  border-color: #0066cc;
+}
+
+.checkLabel {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+  font-size: 0.9rem !important;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.submitBtn {
+  background: #0066cc;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.submitBtn:hover {
+  background: #0052a3;
+}
+
+.abortBtn {
+  background: #cc3300;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.abortBtn:hover {
+  background: #aa2200;
+}

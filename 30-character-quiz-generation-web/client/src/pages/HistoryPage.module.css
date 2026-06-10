@@ -1,0 +1,81 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.filters label input {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 160px;
+}
+
+.checkLabel {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px !important;
+}
+
+.meta {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.pagination button {
+  background: #0066cc;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.pagination button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  font-size: 0.9rem;
+  color: #666;
+}

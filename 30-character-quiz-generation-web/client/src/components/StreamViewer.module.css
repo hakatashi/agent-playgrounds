@@ -1,0 +1,25 @@
+.viewer {
+  background: #1a1a2e;
+  border-radius: 8px;
+  padding: 16px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.status {
+  color: #88ccff;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background: rgba(136, 204, 255, 0.1);
+  border-radius: 4px;
+}
+
+.content {
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Consolas', 'Monaco', monospace;
+  margin: 0;
+}

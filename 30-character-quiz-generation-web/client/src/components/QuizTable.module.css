@@ -1,0 +1,79 @@
+.wrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th {
+  text-align: left;
+  padding: 8px 12px;
+  background: #f0f0f0;
+  border-bottom: 2px solid #ddd;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+
+.table tr:hover td {
+  background: #f9f9f9;
+}
+
+.exact td {
+  background: #f0fff0;
+}
+
+.exact:hover td {
+  background: #e0ffe0;
+}
+
+.question {
+  font-family: 'Noto Sans JP', sans-serif;
+  max-width: 400px;
+}
+
+.count {
+  text-align: center;
+  font-weight: bold;
+}
+
+.ok {
+  color: #00aa00;
+}
+
+.ng {
+  color: #cc3300;
+}
+
+.model {
+  font-size: 0.8rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 32px;
+  text-align: center;
+  color: #999;
+}
+
+.deleteBtn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 2px 8px;
+  color: #cc3300;
+  font-size: 1rem;
+}
+
+.deleteBtn:hover {
+  background: #ffeeee;
+  border-color: #cc3300;
+}
