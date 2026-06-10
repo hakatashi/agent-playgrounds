@@ -86,3 +86,50 @@
   font-size: 0.85rem;
   color: #7a5900;
 }
+
+.llamaStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  flex-wrap: wrap;
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot_stopped { background: #aaa; }
+.dot_starting { background: #f0a500; animation: pulse 1s infinite; }
+.dot_running { background: #22aa22; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.modelPath {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.stopLlamaBtn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #cc3300;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  color: #cc3300;
+}
+
+.stopLlamaBtn:hover {
+  background: #ffeeee;
+}

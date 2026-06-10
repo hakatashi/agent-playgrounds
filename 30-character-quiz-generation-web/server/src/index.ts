@@ -6,6 +6,7 @@ import generateRouter from './routes/generate.js';
 import quizzesRouter from './routes/quizzes.js';
 import exportRouter from './routes/export.js';
 import batchRouter from './routes/batch.js';
+import llamaServerRouter from './routes/llama-server.js';
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use('/api/generate', generateRouter);
 app.use('/api/quizzes', quizzesRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/batch', batchRouter);
+app.use('/api/llama-server', llamaServerRouter);
 
 connectDB().then(() => {
   app.listen(config.port, () => {

@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import styles from './GenForm.module.css';
 
 export interface GenFormValues {
@@ -9,6 +9,12 @@ export interface GenFormValues {
   modelName: string;
   useWikipedia: boolean;
   wikiTitle: string;
+}
+
+interface LlamaStatus {
+  state: 'stopped' | 'starting' | 'running';
+  modelPath?: string;
+  pid?: number;
 }
 
 interface Props {
@@ -29,6 +35,7 @@ export default function GenForm({onSubmit, loading, onAbort}: Props) {
   });
   const [models, setModels] = useState<string[]>([]);
   const [modelsWarning, setModelsWarning] = useState('');
+  const [llamaStatus, setLlamaStatus] = useState<LlamaStatus>({state: 'stopped'});
 
   useEffect(() => {
     setModelsWarning('');
@@ -44,6 +51,26 @@ export default function GenForm({onSubmit, loading, onAbort}: Props) {
       })
       .catch(() => {});
   }, [values.llmBackend]);
+
+  // llama-server ステータスをポーリング
+  const fetchLlamaStatus = useCallback(() => {
+    fetch('/api/llama-server/status')
+      .then((r) => r.json())
+      .then((data: LlamaStatus) => setLlamaStatus(data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (values.llmBackend !== 'llama-server') return;
+    fetchLlamaStatus();
+    const id = setInterval(fetchLlamaStatus, 2000);
+    return () => clearInterval(id);
+  }, [values.llmBackend, fetchLlamaStatus]);
+
+  const handleStopLlama = async () => {
+    await fetch('/api/llama-server/stop', {method: 'POST'});
+    fetchLlamaStatus();
+  };
 
   const set = (key: keyof GenFormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
@@ -88,14 +115,33 @@ export default function GenForm({onSubmit, loading, onAbort}: Props) {
               {models.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           ) : (
-            <input value={values.modelName} onChange={set('modelName')} placeholder="モデル名を入力" required />
+            <input value={values.modelName} onChange={set('modelName')} placeholder="GGUFファイルパスを入力" required />
           )}
         </label>
       </div>
 
       {modelsWarning && (
         <div className={styles.warning}>
-          Ollamaに接続できません: {modelsWarning}
+          バックエンドに接続できません: {modelsWarning}
+        </div>
+      )}
+
+      {values.llmBackend === 'llama-server' && (
+        <div className={styles.llamaStatus}>
+          <span className={`${styles.statusDot} ${styles[`dot_${llamaStatus.state}`]}`} />
+          {llamaStatus.state === 'stopped' && 'llama-server: 停止中（生成時に自動起動）'}
+          {llamaStatus.state === 'starting' && 'llama-server: 起動中...'}
+          {llamaStatus.state === 'running' && (
+            <>
+              llama-server: 稼働中 (PID {llamaStatus.pid})
+              {llamaStatus.modelPath && <span className={styles.modelPath}> — {llamaStatus.modelPath.split('/').pop()}</span>}
+            </>
+          )}
+          {llamaStatus.state === 'running' && (
+            <button type="button" className={styles.stopLlamaBtn} onClick={handleStopLlama}>
+              プロセス停止
+            </button>
+          )}
         </div>
       )}
 
