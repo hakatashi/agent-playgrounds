@@ -80,6 +80,9 @@ router.post('/', async (req: Request, res: Response) => {
         if (event.type === 'chunk') {
           fullText += event.content;
           sendSSE(res, 'chunk', {content: event.content});
+        } else if (event.type === 'reasoning') {
+          // thinking トークン: 表示用に転送するが TSV 解析には含めない
+          sendSSE(res, 'chunk', {content: event.content});
         } else if (event.type === 'done') {
           // handled below
         } else if (event.type === 'error') {

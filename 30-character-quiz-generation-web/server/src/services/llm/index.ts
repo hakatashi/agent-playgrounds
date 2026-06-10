@@ -3,6 +3,12 @@ export interface LLMChunkEvent {
   content: string;
 }
 
+// thinking モデルの思考トークン（TSV解析には使わない）
+export interface LLMReasoningEvent {
+  type: 'reasoning';
+  content: string;
+}
+
 export interface LLMDoneEvent {
   type: 'done';
 }
@@ -12,7 +18,7 @@ export interface LLMErrorEvent {
   error: string;
 }
 
-export type LLMStreamEvent = LLMChunkEvent | LLMDoneEvent | LLMErrorEvent;
+export type LLMStreamEvent = LLMChunkEvent | LLMReasoningEvent | LLMDoneEvent | LLMErrorEvent;
 
 export interface LLMService {
   streamGenerate(

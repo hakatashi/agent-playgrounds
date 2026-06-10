@@ -1,6 +1,6 @@
 import {spawn, type ChildProcess} from 'child_process';
 import {config} from '../../config.js';
-import type {LLMService} from './index.js';
+import type {LLMService, LLMStreamEvent} from './index.js';
 
 // ── プロセス状態 ──────────────────────────────────────────────
 let serverProcess: ChildProcess | null = null;
@@ -130,7 +130,7 @@ process.once('SIGINT', () => { stopLlamaServer(); process.exit(0); });
 // ── SSEストリーミング共通ヘルパー ──────────────────────────────
 async function streamFromLlamaServer(
   prompt: string,
-  onEvent: (e: {type: 'chunk'; content: string} | {type: 'done'} | {type: 'error'; error: string}) => void,
+  onEvent: (e: LLMStreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
   const response = await fetch(`${config.llamaServerUrl}/v1/chat/completions`, {
@@ -168,9 +168,14 @@ async function streamFromLlamaServer(
         return;
       }
       try {
-        const parsed = JSON.parse(data) as {choices?: {delta?: {content?: string}}[]};
-        const content = parsed.choices?.[0]?.delta?.content;
-        if (content) onEvent({type: 'chunk', content});
+        const parsed = JSON.parse(data) as {
+          choices?: {delta?: {content?: string; reasoning_content?: string}}[];
+        };
+        const delta = parsed.choices?.[0]?.delta;
+        // thinking トークン（表示用。TSV解析対象外）
+        if (delta?.reasoning_content) onEvent({type: 'reasoning', content: delta.reasoning_content});
+        // 実際の回答トークン
+        if (delta?.content) onEvent({type: 'chunk', content: delta.content});
       } catch {
         // ignore malformed chunks
       }
