@@ -44,125 +44,138 @@ function keyR(k)      { return Math.floor(k / 100); }
 function keyC(k)      { return k % 100; }
 
 // ── Puzzle generator ─────────────────────────────────────────────────────────
-// Strategy: random walk to generate reachable floor, place walls, then
-// place boxes/goals and verify solvability via BFS/DFS with push-based search.
+// Strategy: reverse generation (pull method).
+// Start from solved state (boxes on goals), then repeatedly "pull" boxes
+// backward. Each pull is the reverse of a push, guaranteeing the resulting
+// puzzle is solvable in at least targetPulls box-push operations.
 
-function generatePuzzle(numBoxes) {
-  for (let attempt = 0; attempt < 200; attempt++) {
-    const puz = tryGenerate(numBoxes);
-    if (puz) return puz;
-  }
-  return null;
-}
+const DIRS4 = [[-1,0],[1,0],[0,-1],[0,1]];
 
-function tryGenerate(numBoxes) {
-  // 1. Fill with walls
+function generateFloor() {
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(WALL));
-
-  // 2. Carve floor via random walk from centre
-  const startR = 2 + Math.floor(Math.random() * (ROWS - 4));
-  const startC = 2 + Math.floor(Math.random() * (COLS - 4));
-  let r = startR, c = startC;
+  const sr = 1 + Math.floor(Math.random() * (ROWS - 2));
+  const sc = 1 + Math.floor(Math.random() * (COLS - 2));
+  let r = sr, c = sc;
   const floor = new Set();
   floor.add(posKey(r, c));
-  const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
-
-  const targetFloor = 18 + Math.floor(Math.random() * 8);
-  let steps2 = 0;
-  while (floor.size < targetFloor && steps2 < 2000) {
-    steps2++;
-    const [dr, dc] = DIRS[Math.floor(Math.random() * 4)];
+  const target = 22 + Math.floor(Math.random() * 10);
+  for (let i = 0; i < 3000 && floor.size < target; i++) {
+    const [dr, dc] = DIRS4[Math.floor(Math.random() * 4)];
     const nr = r + dr, nc = c + dc;
-    if (nr > 0 && nr < ROWS - 1 && nc > 0 && nc < COLS - 1) {
-      r = nr; c = nc;
-      floor.add(posKey(r, c));
+    if (nr > 0 && nr < ROWS - 1 && nc > 0 && nc < COLS - 1) { r = nr; c = nc; floor.add(posKey(r, c)); }
+  }
+  if (floor.size < 16) return null;
+  for (const k of floor) grid[keyR(k)][keyC(k)] = FLOOR;
+  return grid;
+}
+
+function getFloorCells(grid) {
+  const cells = [];
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (grid[r][c] === FLOOR) cells.push(posKey(r, c));
+  return cells;
+}
+
+// BFS flood-fill: cells reachable by player without moving boxes
+function getPlayerRegion(grid, playerPos, boxes) {
+  const visited = new Set();
+  const start = posKey(playerPos.r, playerPos.c);
+  visited.add(start);
+  const queue = [start];
+  while (queue.length > 0) {
+    const k = queue.shift();
+    const r = keyR(k), c = keyC(k);
+    for (const [dr, dc] of DIRS4) {
+      const nr = r + dr, nc = c + dc;
+      if (!inBounds(nr, nc) || grid[nr][nc] === WALL) continue;
+      const nk = posKey(nr, nc);
+      if (visited.has(nk) || boxes.has(nk)) continue;
+      visited.add(nk);
+      queue.push(nk);
     }
   }
-  if (floor.size < 12) return null;
-
-  for (const k of floor) grid[keyR(k)][keyC(k)] = FLOOR;
-
-  // 3. Place player on random floor cell
-  const floorArr = [...floor];
-  shuffle(floorArr);
-  const playerKey = floorArr[0];
-  const playerPos = { r: keyR(playerKey), c: keyC(playerKey) };
-
-  // 4. Pick box positions (must not be corners = deadlock squares)
-  const candidates = floorArr.slice(1).filter(k => !isDeadlockSquare(grid, keyR(k), keyC(k)));
-  if (candidates.length < numBoxes * 2) return null;
-
-  const boxKeys = candidates.slice(0, numBoxes);
-  const goalKeys = candidates.slice(numBoxes, numBoxes * 2);
-  if (boxKeys.length < numBoxes || goalKeys.length < numBoxes) return null;
-
-  // 5. Mark goals
-  for (const k of goalKeys) grid[keyR(k)][keyC(k)] = GOAL;
-
-  // 6. Verify solvable with simple push BFS
-  const boxes = new Set(boxKeys);
-  const goals = new Set(goalKeys);
-
-  if (!isSolvable(grid, playerPos, boxes, goals, 800)) return null;
-
-  return { grid, playerPos, boxes, goals };
+  return visited;
 }
 
 function isDeadlockSquare(grid, r, c) {
-  // Simple corner detection
-  const wallU = r === 0 || grid[r-1][c] === WALL;
-  const wallD = r === ROWS-1 || grid[r+1][c] === WALL;
-  const wallL = c === 0 || grid[r][c-1] === WALL;
-  const wallR = c === COLS-1 || grid[r][c+1] === WALL;
-  return (wallU || wallD) && (wallL || wallR);
+  const wU = r === 0 || grid[r-1][c] === WALL;
+  const wD = r === ROWS-1 || grid[r+1][c] === WALL;
+  const wL = c === 0 || grid[r][c-1] === WALL;
+  const wR = c === COLS-1 || grid[r][c+1] === WALL;
+  return (wU || wD) && (wL || wR);
 }
 
-// Push-based BFS for solvability
-function isSolvable(grid, startPlayer, startBoxes, goals, maxNodes) {
-  const encode = (pPos, boxes) => {
-    const bArr = [...boxes].sort((a, b) => a - b);
-    return pPos.r + ',' + pPos.c + '|' + bArr.join(',');
-  };
+// Reverse-generate a puzzle requiring at least ~targetPulls box pushes.
+// A "pull" undoes one forward push: box at B moves to B-D, player moves to B-2D,
+// provided the player can reach B-D and B-2D is empty floor.
+function tryGenerateReverse(numBoxes, targetPulls) {
+  const grid = generateFloor();
+  if (!grid) return null;
 
-  const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
-  const visited = new Set();
-  const startKey = encode(startPlayer, startBoxes);
-  visited.add(startKey);
-  const queue = [{ player: startPlayer, boxes: startBoxes }];
-  let nodes = 0;
+  const floorArr = getFloorCells(grid);
+  // Goals must not be deadlock squares
+  const nonDL = floorArr.filter(k => !isDeadlockSquare(grid, keyR(k), keyC(k)));
+  if (nonDL.length < numBoxes + 5) return null;
+  shuffle(nonDL);
 
-  while (queue.length > 0 && nodes < maxNodes) {
-    nodes++;
-    const { player, boxes } = queue.shift();
+  const goalArr = nonDL.slice(0, numBoxes);
+  const goals = new Set(goalArr);
 
-    if ([...goals].every(g => boxes.has(g))) return true;
+  // Solved state: boxes on goals
+  let boxes = new Set(goalArr);
 
-    for (const [dr, dc] of DIRS) {
-      const nr = player.r + dr, nc = player.c + dc;
-      if (!inBounds(nr, nc) || grid[nr][nc] === WALL) continue;
+  // Player starts at any free floor cell
+  const free = floorArr.filter(k => !goals.has(k));
+  if (free.length === 0) return null;
+  shuffle(free);
+  let player = { r: keyR(free[0]), c: keyC(free[0]) };
 
-      const nKey = posKey(nr, nc);
-      const newBoxes = new Set(boxes);
+  let pullsDone = 0;
 
-      if (boxes.has(nKey)) {
-        // Push box
-        const br = nr + dr, bc = nc + dc;
-        if (!inBounds(br, bc) || grid[br][bc] === WALL || boxes.has(posKey(br, bc))) continue;
-        const bKey = posKey(br, bc);
-        if (!goals.has(bKey) && isDeadlockSquare(grid, br, bc)) continue;
-        newBoxes.delete(nKey);
-        newBoxes.add(bKey);
-      }
+  for (let iter = 0; iter < targetPulls * 20 && pullsDone < targetPulls; iter++) {
+    const region = getPlayerRegion(grid, player, boxes);
 
-      const newPlayer = { r: nr, c: nc };
-      const stateKey = encode(newPlayer, newBoxes);
-      if (!visited.has(stateKey)) {
-        visited.add(stateKey);
-        queue.push({ player: newPlayer, boxes: newBoxes });
+    // Collect valid pulls for every (box, direction) pair
+    const valid = [];
+    for (const b of boxes) {
+      const br = keyR(b), bc = keyC(b);
+      for (const [dr, dc] of DIRS4) {
+        // To undo a push of direction (dr,dc): player needed at (br-dr, bc-dc)
+        const plNeedR = br - dr, plNeedC = bc - dc;
+        if (!region.has(posKey(plNeedR, plNeedC))) continue;
+        // After pull: player moves to (br-2dr, bc-2dc), box moves to (br-dr, bc-dc)
+        const newPlR = br - 2*dr, newPlC = bc - 2*dc;
+        if (!inBounds(newPlR, newPlC) || grid[newPlR][newPlC] === WALL) continue;
+        if (boxes.has(posKey(newPlR, newPlC))) continue;
+        // New box position = (br-dr, bc-dc) = player's needed position
+        // Don't let box land on deadlock unless it came from a goal (not applicable in reverse)
+        valid.push({ br, bc, dr, dc, newPlR, newPlC, newBoxKey: posKey(plNeedR, plNeedC) });
       }
     }
+
+    if (valid.length === 0) break;
+
+    const p = valid[Math.floor(Math.random() * valid.length)];
+    boxes.delete(posKey(p.br, p.bc));
+    boxes.add(p.newBoxKey);
+    player = { r: p.newPlR, c: p.newPlC };
+    pullsDone++;
   }
-  return false;
+
+  // Require enough pulls and at least one box not on its goal
+  if (pullsDone < Math.ceil(targetPulls * 0.6)) return null;
+  if ([...goals].every(g => boxes.has(g))) return null;
+
+  return { grid, playerPos: player, boxes, goals };
+}
+
+function generatePuzzle(numBoxes, targetPulls) {
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const puz = tryGenerateReverse(numBoxes, targetPulls);
+    if (puz) return puz;
+  }
+  return null;
 }
 
 function inBounds(r, c) {
@@ -367,8 +380,23 @@ function restart() {
 
 // ── Puzzle loading ─────────────────────────────────────────────────────────
 let initialState = null;
-let numBoxes = 2;
 let generating = false;
+let solveCount = 0;
+
+// Difficulty table: [numBoxes, targetPulls]
+const DIFFICULTY = [
+  [3, 12],
+  [3, 16],
+  [3, 20],
+  [4, 18],
+  [4, 22],
+  [4, 28],
+];
+
+function getDifficulty() {
+  const idx = Math.min(solveCount, DIFFICULTY.length - 1);
+  return DIFFICULTY[idx];
+}
 
 function loadPuzzle(puz) {
   puzzle = puz;
@@ -384,7 +412,8 @@ function loadPuzzle(puz) {
   clearInterval(timerInterval);
   document.getElementById('timeDisplay').textContent = '0:00';
   document.getElementById('overlay').classList.add('hidden');
-  document.getElementById('info').textContent = `箱の数: ${puz.goals.size} | キーボードで操作してください`;
+  document.getElementById('info').textContent =
+    `箱の数: ${puz.goals.size} | 難易度 ${Math.min(solveCount + 1, DIFFICULTY.length)} / ${DIFFICULTY.length}`;
   updateStats();
   renderPuzzle();
 }
@@ -394,23 +423,22 @@ function requestNextPuzzle() {
   generating = true;
   document.getElementById('genStatus').textContent = '問題を生成中...';
 
-  // Gradually increase difficulty
-  if (steps > 0 && solved) {
-    if (numBoxes < 4 && Math.random() < 0.4) numBoxes++;
-  }
+  if (solved) solveCount++;
 
   setTimeout(() => {
-    const puz = generatePuzzle(numBoxes);
+    let [nb, tp] = getDifficulty();
+    let puz = generatePuzzle(nb, tp);
+    // Fallback: relax pulls
+    if (!puz) puz = generatePuzzle(nb, Math.ceil(tp * 0.6));
+    // Fallback: one fewer box
+    if (!puz) puz = generatePuzzle(nb - 1, Math.ceil(tp * 0.5));
+
     generating = false;
     document.getElementById('genStatus').textContent = '';
     if (puz) {
       loadPuzzle(puz);
     } else {
-      // fallback: use fewer boxes
-      numBoxes = Math.max(1, numBoxes - 1);
-      const puz2 = generatePuzzle(numBoxes);
-      if (puz2) loadPuzzle(puz2);
-      else document.getElementById('genStatus').textContent = '生成に失敗しました。再試行してください (N)';
+      document.getElementById('genStatus').textContent = '生成に失敗しました。再試行してください (N)';
     }
   }, 10);
 }
