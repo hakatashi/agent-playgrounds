@@ -16,8 +16,8 @@ canvas.height = ROWS * TILE;
 // maxAttempts: random layout attempts before giving up.
 const DIFF = {
   2: { minPushes: 5,  bfsNodes:  8000, maxAttempts:  400 },
-  3: { minPushes: 6,  bfsNodes: 20000, maxAttempts:  700 },
-  4: { minPushes: 7,  bfsNodes: 40000, maxAttempts: 1200 },
+  3: { minPushes: 7,  bfsNodes: 20000, maxAttempts:  800 },
+  4: { minPushes: 8,  bfsNodes: 40000, maxAttempts: 1500 },
 };
 
 // ── Game state ─────────────────────────────────────────────────────────────
@@ -345,9 +345,9 @@ function updateStats() {
 }
 
 function diffStars(pushes) {
-  if (pushes >= 14) return '★★★';
-  if (pushes >= 9)  return '★★☆';
-  if (pushes >= 5)  return '★☆☆';
+  if (pushes >= 10) return '★★★';
+  if (pushes >= 7)  return '★★☆';
+  if (pushes >= 4)  return '★☆☆';
   return '☆☆☆';
 }
 
@@ -427,6 +427,130 @@ function restart() {
   updateStats();
 }
 
+// ── URL Hash Sharing ───────────────────────────────────────────────────────
+// Binary format (version 1):
+//   byte 0   : version (1)
+//   byte 1   : player position (r*COLS+c, 0-63)
+//   byte 2   : numBoxes (1-4)
+//   bytes 3..3+n-1  : box positions sorted ascending (r*COLS+c each)
+//   bytes 3+n..3+2n-1: goal positions sorted ascending
+//   bytes 3+2n..3+2n+7: floor bitmap (64 bits, bit r*COLS+c = 1 if not WALL)
+// Encoded as URL-safe base64 (no padding).
+function encodePuzzleToHash(puz) {
+  const { grid, playerPos, boxes, goals } = puz;
+  const n     = goals.size;
+  const bytes = [1]; // version
+
+  bytes.push(playerPos.r * COLS + playerPos.c);
+  bytes.push(n);
+
+  for (const k of [...boxes].sort((a, b) => a - b))
+    bytes.push(keyR(k) * COLS + keyC(k));
+  for (const k of [...goals].sort((a, b) => a - b))
+    bytes.push(keyR(k) * COLS + keyC(k));
+
+  // 64-bit floor bitmap packed into 8 bytes
+  const fb = new Array(8).fill(0);
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c] !== WALL) {
+        const bit = r * COLS + c;
+        fb[bit >> 3] |= 1 << (bit & 7);
+      }
+    }
+  }
+  bytes.push(...fb);
+
+  const raw = String.fromCharCode(...bytes);
+  return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function decodePuzzleFromHash(enc) {
+  try {
+    const b64    = enc.replace(/-/g, '+').replace(/_/g, '/');
+    const pad    = (4 - b64.length % 4) % 4;
+    const raw    = atob(b64 + '='.repeat(pad));
+    const bytes  = Uint8Array.from(raw, ch => ch.charCodeAt(0));
+
+    let i = 0;
+    if (bytes[i++] !== 1) return null; // version check
+
+    const pp         = bytes[i++];
+    const playerPos  = { r: Math.floor(pp / COLS), c: pp % COLS };
+    const n          = bytes[i++];
+    if (n < 1 || n > 4) return null;
+
+    const boxes = new Set();
+    for (let j = 0; j < n; j++) {
+      const b = bytes[i++];
+      boxes.add(posKey(Math.floor(b / COLS), b % COLS));
+    }
+    const goals = new Set();
+    for (let j = 0; j < n; j++) {
+      const g = bytes[i++];
+      goals.add(posKey(Math.floor(g / COLS), g % COLS));
+    }
+
+    // Reconstruct grid from floor bitmap
+    const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(WALL));
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const bit = r * COLS + c;
+        if (bytes[i + (bit >> 3)] & (1 << (bit & 7))) {
+          grid[r][c] = goals.has(posKey(r, c)) ? GOAL : FLOOR;
+        }
+      }
+    }
+
+    // Basic validation
+    if (!inBounds(playerPos.r, playerPos.c) || grid[playerPos.r][playerPos.c] === WALL)
+      return null;
+    for (const k of [...boxes, ...goals]) {
+      if (!inBounds(keyR(k), keyC(k)) || grid[keyR(k)][keyC(k)] === WALL) return null;
+    }
+    if (boxes.size !== n || goals.size !== n) return null;
+
+    // Compute optimal solution via BFS (large budget since we trust the data)
+    const sol = solvePuzzle(grid, playerPos, boxes, goals, 120000);
+
+    return {
+      grid, playerPos, boxes, goals,
+      optimalMoves:  sol ? sol.moves  : 0,
+      optimalPushes: sol ? sol.pushes : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function copyCurrentURL() {
+  const url = location.href;
+  const btn = document.getElementById('copyBtn');
+
+  const succeed = () => {
+    btn.textContent = 'コピーしました';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'URLをコピー'; btn.classList.remove('copied'); }, 2000);
+  };
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(succeed).catch(() => fallbackCopy(url, succeed));
+  } else {
+    fallbackCopy(url, succeed);
+  }
+}
+
+function fallbackCopy(text, cb) {
+  const el = Object.assign(document.createElement('textarea'), {
+    value: text, style: 'position:fixed;opacity:0',
+  });
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  cb();
+}
+
 // ── Puzzle Loading ─────────────────────────────────────────────────────────
 function loadPuzzle(puz) {
   puzzle       = puz;
@@ -446,6 +570,9 @@ function loadPuzzle(puz) {
     `最短手数: <strong>${puz.optimalMoves}</strong> 手 &nbsp;|&nbsp; ` +
     `最少押し: <strong>${puz.optimalPushes}</strong> 回 &nbsp;|&nbsp; ` +
     `難易度: ${stars}`;
+
+  // Reflect current puzzle in the URL hash so it can be shared
+  history.replaceState(null, '', '#' + encodePuzzleToHash(puz));
 
   updateStats();
   renderPuzzle();
@@ -488,6 +615,26 @@ document.addEventListener('keydown', e => {
 });
 
 document.getElementById('nextBtn').addEventListener('click', requestNextPuzzle);
+document.getElementById('copyBtn').addEventListener('click', copyCurrentURL);
 
 // ── Init ───────────────────────────────────────────────────────────────────
-requestNextPuzzle();
+// If the URL contains a hash, try to load the encoded puzzle from it.
+// Otherwise generate a fresh puzzle.
+(function init() {
+  const hash = location.hash.slice(1);
+  if (hash) {
+    document.getElementById('genStatus').textContent = 'URLから盤面を読み込み中...';
+    setTimeout(() => {
+      const puz = decodePuzzleFromHash(hash);
+      document.getElementById('genStatus').textContent = '';
+      if (puz) {
+        loadPuzzle(puz);
+      } else {
+        document.getElementById('genStatus').textContent = 'URLが無効です。新しい問題を生成します。';
+        requestNextPuzzle();
+      }
+    }, 10);
+  } else {
+    requestNextPuzzle();
+  }
+}());

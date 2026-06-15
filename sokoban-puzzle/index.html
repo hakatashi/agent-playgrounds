@@ -90,6 +90,21 @@
       padding: 1px 6px;
       font-family: monospace;
     }
+    #share {
+      margin-top: 10px;
+    }
+    #copyBtn {
+      padding: 6px 18px;
+      font-size: 0.85rem;
+      background: #334;
+      color: #aac;
+      border: 1px solid #556;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    #copyBtn:hover { background: #445; color: #ccf; }
+    #copyBtn.copied { background: #244; color: #8f8; border-color: #4a4; }
   </style>
 </head>
 <body>
@@ -113,6 +128,9 @@
     <span class="key-hint">Z</span> で1手戻る &nbsp;|&nbsp;
     <span class="key-hint">R</span> でリスタート &nbsp;|&nbsp;
     <span class="key-hint">N</span> で次の問題
+  </div>
+  <div id="share">
+    <button id="copyBtn">URLをコピー</button>
   </div>
   <div id="genStatus"></div>
   <script src="sokoban.js"></script>
