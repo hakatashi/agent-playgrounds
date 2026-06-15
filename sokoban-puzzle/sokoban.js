@@ -571,8 +571,9 @@ function loadPuzzle(puz) {
     `最少押し: <strong>${puz.optimalPushes}</strong> 回 &nbsp;|&nbsp; ` +
     `難易度: ${stars}`;
 
-  // Reflect current puzzle in the URL hash so it can be shared
-  history.replaceState(null, '', '#' + encodePuzzleToHash(puz));
+  // Reflect current puzzle in the URL hash so it can be shared.
+  // history.replaceState is blocked on file:// origins; ignore errors gracefully.
+  try { history.replaceState(null, '', '#' + encodePuzzleToHash(puz)); } catch { /* file:// */ }
 
   updateStats();
   renderPuzzle();
