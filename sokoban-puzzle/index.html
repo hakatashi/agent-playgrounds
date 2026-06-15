@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>倉庫番パズル</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #1a1a2e;
+      color: #eee;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: #e0d5ff;
+      text-shadow: 0 0 20px #8866cc;
+    }
+    #stats {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+    .stat-label { color: #aaa; }
+    .stat-value { color: #88f; font-weight: bold; font-size: 1.3rem; }
+    #info {
+      margin-bottom: 10px;
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+    #canvas-wrapper {
+      position: relative;
+    }
+    #gameCanvas {
+      display: block;
+      border: 2px solid #4455aa;
+      border-radius: 8px;
+      background: #111;
+    }
+    #overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.75);
+      border-radius: 8px;
+      font-size: 1.5rem;
+      color: #ffe;
+      gap: 15px;
+    }
+    #overlay.hidden { display: none; }
+    #overlay .msg { font-size: 2rem; font-weight: bold; color: #88ff88; }
+    #overlay button {
+      padding: 10px 30px;
+      font-size: 1.1rem;
+      background: #4455aa;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #overlay button:hover { background: #6677cc; }
+    #controls {
+      margin-top: 15px;
+      color: #888;
+      font-size: 0.85rem;
+      text-align: center;
+      line-height: 1.6;
+    }
+    #genStatus {
+      margin-top: 8px;
+      color: #aaa;
+      font-size: 0.85rem;
+      min-height: 1.2em;
+    }
+    .key-hint {
+      display: inline-block;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>倉庫番パズル</h1>
+  <div id="stats">
+    <div><span class="stat-label">ステップ数: </span><span class="stat-value" id="stepCount">0</span></div>
+    <div><span class="stat-label">経過時間: </span><span class="stat-value" id="timeDisplay">0:00</span></div>
+    <div><span class="stat-label">残り箱: </span><span class="stat-value" id="boxCount">0</span></div>
+  </div>
+  <div id="info">問題を生成中...</div>
+  <div id="canvas-wrapper">
+    <canvas id="gameCanvas" width="560" height="560"></canvas>
+    <div id="overlay">
+      <div class="msg">クリア！</div>
+      <div id="resultStats"></div>
+      <button id="nextBtn">次の問題へ</button>
+    </div>
+  </div>
+  <div id="controls">
+    <span class="key-hint">↑↓←→</span> または <span class="key-hint">WASD</span> で移動 &nbsp;|&nbsp;
+    <span class="key-hint">Z</span> で1手戻る &nbsp;|&nbsp;
+    <span class="key-hint">R</span> でリスタート &nbsp;|&nbsp;
+    <span class="key-hint">N</span> で次の問題
+  </div>
+  <div id="genStatus"></div>
+  <script src="sokoban.js"></script>
+</body>
+</html>
