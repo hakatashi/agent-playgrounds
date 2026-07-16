@@ -61,8 +61,8 @@ FPS=60 python3 crop.py    # -> frames_60fps/*.png (cropped)
 FPS=60 bash encode.sh      # -> output/watermark-60fps.webm
 ```
 
-Output: `output/watermark-<fps>fps.webm`, alpha-channel VP9, 574x192px, 6s, looping.
-30fps is ~290KB, 60fps is ~400KB (both are the same crop; only the frame rate differs — 60fps buys
+Output: `output/watermark-<fps>fps.webm`, alpha-channel VP9, 850x264px, 6s, looping.
+30fps is ~400KB, 60fps is ~580KB (both are the same crop; only the frame rate differs — 60fps buys
 smoother in-betweens on the icon burst/particle motion, at roughly 1.4x the file size).
 
 ### Previewing transparency

@@ -13,8 +13,9 @@ const RAW_FRAMES_DIR = path.join(__dirname, `frames_raw_${FPS}fps`);
 const TOTAL_FRAMES = Math.round((LOOP_MS / 1000) * FPS);
 
 // Generous canvas around the bottom-right badge; the crop step trims this
-// down to the badge's actual bounding box afterwards.
-const VIEWPORT = { width: 450, height: 160, deviceScaleFactor: 2 };
+// down to the badge's actual bounding box afterwards. Sized for the 1.5x
+// scaled badge (roughly 400x125 CSS px) plus room for particle overshoot.
+const VIEWPORT = { width: 680, height: 260, deviceScaleFactor: 2 };
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

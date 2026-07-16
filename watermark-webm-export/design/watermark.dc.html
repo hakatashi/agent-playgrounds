@@ -47,7 +47,7 @@
 </helmet>
 
 <div style="position:fixed; inset:0; background:transparent;">
-  <div data-watermark-root="1" style="position:absolute; right:20px; bottom:20px; display:flex; align-items:center;">
+  <div data-watermark-root="1" style="position:absolute; right:20px; bottom:20px; display:flex; align-items:center; transform:scale(1.5); transform-origin:bottom right;">
     <div style="position:relative; width:57px; height:57px; margin-right:-21px; z-index:2;">
       <div style="position:absolute; inset:0; border-radius:50%; background:#0d1013; border:1px solid rgba(255,255,255,.1); display:flex; align-items:center; justify-content:center; overflow:hidden; animation: iconBurst2a 6s cubic-bezier(.22,1,.36,1) infinite;">
         <div style="position:absolute; inset:0; border-radius:50%; background: conic-gradient(from 0deg, rgba(56,225,255,.9), rgba(56,225,255,0) 60%, rgba(56,225,255,.9)); animation: ringSpin2a 3s linear infinite; -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px)); mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));"></div>
@@ -59,13 +59,12 @@
       <div style="position:absolute; top:50%; left:50%; width:5px; height:5px; border-radius:50%; background:#38e1ff; --px:-21px; --py:21px; animation: particle2a 6s ease-out infinite .02s;"></div>
     </div>
 
-    <div style="position:relative; padding:12px 20px 12px 26px; border-radius:0 999px 999px 0; overflow:hidden;
+    <div style="position:relative; padding:12px 20px 12px 26px; border-radius:0; overflow:hidden;
         background:rgba(10,12,16,.58); backdrop-filter: blur(10px) saturate(140%); -webkit-backdrop-filter: blur(10px) saturate(140%);
         border:1px solid rgba(255,255,255,.08);
         animation: textWipe2a 6s ease-out infinite;">
       <div style="position:absolute; top:0; bottom:0; width:14%; background:linear-gradient(90deg, transparent, rgba(56,225,255,.3), transparent); animation: scanBar2a 6s linear infinite; pointer-events:none;"></div>
       <div style="display:flex; flex-direction:column; line-height:1.2;">
-        <span style="font-family:'Nunito',sans-serif; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8fe9ff;">Recorded by</span>
         <img src="https://hakata-public.s3.ap-northeast-1.amazonaws.com/sattori/sattori-logo2.svg" style="height:24px; width:auto; display:block; margin:3px 0;" alt="TouhouSattori"/>
         <span style="font-family:'Nunito',sans-serif; font-size:10.5px; font-weight:600; letter-spacing:.02em; color:#7f8b9a;">Touhou Replay Recording Service</span>
       </div>
