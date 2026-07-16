@@ -1,0 +1,18 @@
+{
+  "name": "watermark-webm-export",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Render an animated Claude Design watermark and export it as a transparent WebM video",
+  "type": "commonjs",
+  "scripts": {
+    "capture": "node capture.js",
+    "crop": "python3 crop.py",
+    "encode": "bash encode.sh",
+    "build": "npm run capture && npm run crop && npm run encode",
+    "build:60fps": "FPS=60 npm run build",
+    "build:30fps": "FPS=30 npm run build"
+  },
+  "dependencies": {
+    "puppeteer": "^23.11.1"
+  }
+}

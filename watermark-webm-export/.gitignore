@@ -1,0 +1,4 @@
+node_modules/
+frames_raw_*fps/
+frames_*fps/
+output/

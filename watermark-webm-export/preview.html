@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>watermark.webm alpha preview</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  .swatch { display: flex; align-items: center; justify-content: center; }
+  .swatch:nth-child(1) { background: #ff3b30; }
+  .swatch:nth-child(2) { background: #0a84ff; }
+  .swatch:nth-child(3) { background: #111; }
+  .swatch:nth-child(4) {
+    background-image:
+      linear-gradient(45deg, #ccc 25%, transparent 25%),
+      linear-gradient(-45deg, #ccc 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #ccc 75%),
+      linear-gradient(-45deg, transparent 75%, #ccc 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    background-color: #fff;
+  }
+  video { width: 60%; display: block; }
+</style>
+</head>
+<body>
+  <div class="swatch"><video autoplay loop muted playsinline></video></div>
+  <div class="swatch"><video autoplay loop muted playsinline></video></div>
+  <div class="swatch"><video autoplay loop muted playsinline></video></div>
+  <div class="swatch"><video autoplay loop muted playsinline></video></div>
+<script>
+  // Pick the file to preview via ?src=watermark-60fps.webm (defaults to 30fps).
+  const src = new URLSearchParams(location.search).get('src') || 'watermark-30fps.webm';
+  document.querySelectorAll('video').forEach((v) => { v.src = `output/${src}`; });
+</script>
+</body>
+</html>
