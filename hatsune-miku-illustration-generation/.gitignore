@@ -1,0 +1,9 @@
+# Ignore generated images
+*.png
+
+# Ignore Python virtual environment
+venv/
+
+# Ignore python cache
+__pycache__/
+*.pyc
