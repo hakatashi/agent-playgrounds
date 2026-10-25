@@ -90,6 +90,42 @@ cmp A.out B.out; objdump -d --no-show-raw-insn A.out > A.s   # etc.
 The appended code changes the binary layout, so the timings of these variants aren't
 comparable with the original submissions. Time the unmodified sources separately.
 
+### Result (code test, 2026-10-26)
+
+- **The judge-built executables for A and B are byte-for-byte identical** (21616 bytes,
+  SHA-256 `11fc4000…90eb`). `__has_include(<tbb/tbb.h>)` is false, so the TBB hypothesis is out.
+- The only loaded libraries are libstdc++/libgcc_s from `/opt/atcoder/gcc/lib64`, plus libm,
+  libc and ld.so.
+- `-march=native` on the judge produced the same user code as `-march=sapphirerapids`
+  (also icelake/tigerlake/emeraldrapids, which generate the same code here): an Intel CPU
+  with AVX-512. The only differences from a local build are in glibc's startup files (`endbr64`).
+
+The resubmission gap therefore doesn't come from the generated code. It must come from
+something in the execution environment that correlates with the submitted source.
+
+## Runtime diagnostics (`codetest/runtime.cpp`)
+
+The next hypothesis is that the environment differs at run time. For example, the compile step
+just before the run (`<bits/stdc++.h>` takes much longer to compile and uses much more memory)
+could leave the machine in a different state: free memory available for transparent huge pages,
+CPU frequency, and so on. `runtime.cpp` is appended identically to both sources. With no
+`#include` added, it prints the following at exit:
+
+- wall-clock time from the constructor to the destructor, and CPU time
+- minor page faults (a few thousand without huge pages for this program, far fewer with them)
+- THP counters from `/proc/vmstat`, `/proc/meminfo`, and the THP sysfs settings
+- the CPU model
+
+```sh
+./codetest/make_runtime.sh   # writes codetest/out/rt_{a_bits,b_split}.cpp
+```
+
+Run each variant several times, alternating, on the code test with the heavy input.
+
+Locally (Ryzen 7 5700X), `python3 thp_bench.py build/A/a.out inputs/heavy1.txt` compares runs with
+`GLIBC_TUNABLES=glibc.malloc.hugetlb=1`. Huge pages halve the minor faults (2095 → 1075) but change
+the time by only ~1%, so on Zen 3 huge pages alone don't explain a 13% gap.
+
 ## Prerequisites
 
 - Docker (uses the official `gcc:15.2` image)
