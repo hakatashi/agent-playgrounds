@@ -122,6 +122,43 @@ CPU frequency, and so on. `runtime.cpp` is appended identically to both sources.
 
 Run each variant several times, alternating, on the code test with the heavy input.
 
+### Result (code test, 5 runs each, alternating)
+
+`python3 codetest/analyze_runtime.py`:
+
+| run | VM fingerprint\* | cpu MHz | wall ms |
+| --- | --- | --- | --- |
+| B_4 | 14092/8114/217 | 3197 | 193.5 |
+| A_2 | 15963/8331/17 | 3223 | 195.5 |
+| B_0 | 15963/8331/17 | 3258 | 195.2 |
+| B_2 | 17083/9083/74 | 3317 | 182.5 |
+| B_3 | 17688/6250/203 | 3500 | 183.1 |
+| A_0 | 18871/6621/66 | 3797 | 169.4 |
+| A_4 | 18871/6621/66 | 3800 | 168.9 |
+| B_1 | 18871/6621/66 | 3800 | 168.0 |
+| A_1 | 24430/13292/11 | 3800 | 169.0 |
+| A_3 | 6127/3649/11 | 3797 | 166.3 |
+
+\* `thp_fault_alloc/thp_fault_fallback/thp_collapse_alloc` from `/proc/vmstat`. These counters
+cover the whole VM and didn't change during any run, so equal values mean the same judge VM.
+MemTotal agrees within each group.
+
+- The CPU is an Intel Xeon Platinum 8488C (Sapphire Rapids, AWS 7th-gen instances), in VMs
+  with 3.9 GB of RAM.
+- **Huge pages are not involved**: AnonHugePages is 0 and minflt is 1958–1959 in every run.
+- **Run time is set by the CPU clock of the VM a run lands on.** Pearson r(MHz, wall) = −0.97,
+  and wall × MHz is roughly constant. Fast runs see ~3.8 GHz (max turbo), slow runs
+  ~3.2–3.3 GHz (all-core turbo range). 3.8 / 3.25 ≈ 1.17, which matches the ~13–15% gap
+  between the ~300 ms and ~340 ms modes of the real submissions.
+- **On the same VM, A and B are equally fast**: VM 18871 gave A_0 169.4, A_4 168.9 and B_1 168.0 ms;
+  VM 15963 gave A_2 195.5 and B_0 195.2 ms.
+
+The includes don't make the program slower. A run's speed is set by the turbo frequency the
+judge VM gets at that moment, which most likely depends on how busy the physical host is.
+In the code test, A again landed on fast VMs more often (4/5 vs 1/5, hypergeometric two-sided
+p ≈ 0.21, not significant on its own). Whether the submission pipeline really routes sources
+to VMs differently (e.g. through compile duration) is still open.
+
 Locally (Ryzen 7 5700X), `python3 thp_bench.py build/A/a.out inputs/heavy1.txt` compares runs with
 `GLIBC_TUNABLES=glibc.malloc.hugetlb=1`. Huge pages halve the minor faults (2095 → 1075) but change
 the time by only ~1%, so on Zen 3 huge pages alone don't explain a 13% gap.
