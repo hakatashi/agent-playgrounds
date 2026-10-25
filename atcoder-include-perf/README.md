@@ -29,15 +29,43 @@ and inline functions. The code that ends up in the binary is just what `main` in
 that's the same in both versions. The extra declarations from `<bits/stdc++.h>` affect
 compile time, not the output.
 
-So the 13% gap must come from the judge, not the code. All test cases of a submission run in
-the same judge environment, so if one submission lands on a slower machine or a busier time,
-every case is slower by about the same factor. That fits the narrow 1.11–1.16 ratio across
-all 99 cases. Resubmitting the same code several times should show this variance directly.
+My first conclusion was that the gap came from judge-machine variance. **The resubmission test
+below refutes that**: on AtCoder the difference is real and tied to the source code, so the
+judge build must differ from this local reproduction in some way that hasn't been found yet.
 
-Caveat: the real judge also has `-I` paths for Boost, LibTorch, OR-Tools, etc. and links many
-extra libraries, which the `gcc:15.2` image lacks. The `--as-needed` flag drops libraries that
-aren't referenced, and none of those include paths contains the headers used here, so this
-shouldn't affect the conclusion.
+## Resubmission test
+
+The author resubmitted both sources several times after 00:32 JST. Sources were identified by
+code length (A = 1245 B, B = 1278 B). The values are the max time over all test cases, taken from
+the submission list. Run `python3 stats_test.py`.
+
+| | n | Times (ms) | Median |
+| --- | --- | --- | --- |
+| A | 6 | 296, 296, 296, 302, 303, 323 | 299 |
+| B | 6 | 302, 333, 334, 344, 346, 350 | 339 |
+
+- Mann–Whitney U = 33.5 / 36, exact two-sided p = 0.011
+- Permutation test on the mean difference (32.2 ms): exact two-sided p = 0.0087
+- Welch t = 3.87 (df ≈ 8.2), p < 0.01
+
+The submission times interleave (A at 00:51 and 00:57–58, B at 00:52–00:56), so time of day is
+an unlikely confounder. All submissions, including earlier variants, fall into two modes:
+about 300 ms or about 340 ms. Each source tends to stay in one mode (B: 5 of 6 slow; the 1290 B
+variant was fast both times). That pattern looks like a code-layout/alignment effect, which is
+only possible if the judge's executables for A and B differ.
+
+## Open hypotheses (not verified)
+
+- The judge's `-I<install_dir>/include` holds many third-party headers (Boost, LibTorch,
+  OR-Tools, Abseil, ...). `<bits/stdc++.h>` pulls in `<execution>`, and libstdc++ sets
+  `_GLIBCXX_USE_TBB_PAR_BACKEND` from `__has_include(<tbb/tbb.h>)`. If TBB headers are reachable,
+  A would expand differently. LibTorch 2.8.0 doesn't ship TBB headers (checked); the other
+  libraries weren't checked.
+- Other differences between the real judge toolchain (a self-built GCC with `--disable-checking`
+  and similar options, and extra link libraries) and the `gcc:15.2` Docker image.
+
+To settle it, build in a faithful copy of the judge environment (AtCoder's install script),
+or get the actual binaries or their `objdump` from the judge (e.g. via code test).
 
 ## Prerequisites
 
