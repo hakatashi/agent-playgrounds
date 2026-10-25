@@ -67,6 +67,29 @@ only possible if the judge's executables for A and B differ.
 To settle it, build in a faithful copy of the judge environment (AtCoder's install script),
 or get the actual binaries or their `objdump` from the judge (e.g. via code test).
 
+## Code-test diagnostics (`codetest/`)
+
+`codetest/diag.cpp` is appended unchanged to both submissions. It adds no `#include`, so the
+two sources still differ only in their include lines. A constructor that runs before `main`
+reads `/proc/self/exe` with raw syscalls and writes these to stderr:
+
+- the compiler version, `__has_include(<tbb/tbb.h>)`, and the related libstdc++ macros
+- an FNV-1a hash of the whole executable and of each ELF section
+- address, size and hash of every function symbol
+- `/proc/self/maps`, which shows the shared libraries actually loaded
+- the whole executable in base64, so it can be disassembled locally
+
+```sh
+./codetest/make.sh    # writes codetest/out/{a_bits,b_split}.cpp and builds them locally as a check
+# run both on AtCoder's code test (C++23 GCC 15.2.0), save stderr, then:
+python3 codetest/decode.py stderr_A.txt A.out
+python3 codetest/decode.py stderr_B.txt B.out
+cmp A.out B.out; objdump -d --no-show-raw-insn A.out > A.s   # etc.
+```
+
+The appended code changes the binary layout, so the timings of these variants aren't
+comparable with the original submissions. Time the unmodified sources separately.
+
 ## Prerequisites
 
 - Docker (uses the official `gcc:15.2` image)
